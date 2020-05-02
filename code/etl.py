@@ -1,67 +1,6 @@
-import os
-import glob
-import psycopg2
 from code.sql_queries import *
 import pandas as pd
-import bleach
-
-
-def get_all_files(filepath):
-    """
-
-    Args:
-        filepath: path to explore
-
-    Returns:
-        list: list of path of files to open
-    Examples:
-        ['/Users/paulogier/80-PythonProjects/Udacity_Sparkify_Postgres/data/song_data/A/A/TRAAABD128F429CF47.json']
-    """
-    # get all files matching extension from directory
-    all_files = []
-    for root, dirs, files in os.walk(filepath):
-        files = glob.glob(os.path.join(root, '*.json'))
-        for f in files:
-            all_files.append(os.path.abspath(f))
-    return all_files
-
-def sanitize_inputs(i):
-    """
-    Sanitize the input to prevent JS injection attack with bleach.
-    Args:
-        i:
-    """
-    if i is None:
-        return None
-    if isinstance(i, str):
-        return bleach.clean(i)
-    else:
-        return i
-
-
-def prepare_data(df, usecols):
-    """
-    - Select the columns to be inserted
-    - Rename them
-    - Sanitize the inputs with bleach
-    - Re-order the attributes as in the destination table
-    Args:
-        df (pd.DataFrame):
-        usecols (pd.Series):
-
-    Returns:
-        pd.DataFrame
-    """
-
-    assert isinstance(df, pd.DataFrame)
-    assert isinstance(usecols, pd.Series)
-    old_cols = usecols.index
-    new_cols = usecols.values
-    df2 = df[old_cols].copy()  # select interesting cols from raw data
-    df2 = df2.rename(columns=usecols)  # rename them
-    df2 = df2.applymap(lambda v: sanitize_inputs(v))  # sanitize clean inputs with bleach
-    df2 = df2[new_cols]  # re-order cols
-    return df2
+from code.utils import prepare_data, connection_sparkifydb, get_all_files, sanitize_inputs
 
 def process_song_file(cur, filepath):
     """
@@ -117,6 +56,7 @@ def process_log_file(cur, filepath):
 
     # convert timestamp column to datetime
     t = pd.to_datetime(df['ts'], unit='ms')
+    assert isinstance(t, pd.Series)
     t.drop_duplicates(inplace=True)
     t.dropna(inplace=True)
 
@@ -199,7 +139,7 @@ def main():
     Returns:
         None
     """
-    conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
+    conn = connection_sparkifydb()
     cur = conn.cursor()
 
     process_data(cur, conn, filepath='../data/song_data', func=process_song_file)
