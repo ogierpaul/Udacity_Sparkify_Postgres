@@ -34,7 +34,7 @@ def test_artists_primarykey(test_artists):
     assert len(np.unique(df.index)) == df.shape[0]
 
 def test_upsert_data(test_conn):
-    data = (1, 'foo', 'bar', 1.2, 2)
+    data = ('1', 'foo', 'bar', 1.2, 2)
     upsert_query = '''
     INSERT INTO artists (artist_id, name, location, latitude, longitude)
     VALUES (%s, %s, %s, %s, %s)
@@ -43,7 +43,7 @@ def test_upsert_data(test_conn):
     cur = test_conn.cursor()
     cur.execute(upsert_query, data)
     cur.execute(upsert_query, data)
-    test = pd.read_sql('SELECT * FROM artists WHERE artist_id = 1;', con=test_conn)
+    test = pd.read_sql("SELECT * FROM artists WHERE artist_id = '1';", con=test_conn)
     assert test.shape[0] == 1
 
 def test_access_data():
@@ -52,6 +52,7 @@ def test_access_data():
     assert isinstance(song, pd.DataFrame)
     log = pd.read_json(datapath+ sample_log_path, lines=True)
     assert isinstance(log, pd.DataFrame)
+
 
 
 
