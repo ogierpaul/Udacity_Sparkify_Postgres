@@ -21,7 +21,7 @@ def process_song_file(cur, filepath):
     songs_cols = pd.Series(
         index=['song_id', 'title', 'artist_id', 'year', 'duration'],
         data=['song_id', 'title', 'artist_id', 'year', 'duration'])
-    song_data = prepare_data(df=df, usecols=songs_cols)
+    song_data = prepare_data(df=df, usecols=songs_cols, key='song_id')
     for (i, r) in song_data.iterrows():
         cur.execute(song_table_insert, r)
     
@@ -29,7 +29,7 @@ def process_song_file(cur, filepath):
     artist_cols = pd.Series(
         index=['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude'],
         data=['artist_id', 'name', 'location', 'latitude', 'longitude'])
-    artist_data = prepare_data(df=df, usecols=artist_cols)
+    artist_data = prepare_data(df=df, usecols=artist_cols, key='artist_id')
     for (i, r) in artist_data.iterrows():
         cur.execute(artist_table_insert, r)
     return None

@@ -83,7 +83,7 @@ def prepare_data(df, usecols=None, key=None):
     """
     assert isinstance(df, pd.DataFrame)
     if not usecols is None:
-        df2 = order_cols(df=df).copy()
+        df2 = order_cols(df=df, usecols=usecols).copy()
     else:
         df2 = df.copy()
     if not key is None:
