@@ -64,7 +64,7 @@ def sanitize_inputs(i):
     """
     Sanitize the input to prevent JS injection attack with bleach.
     Args:
-        i:
+        i: value to be cleaned
     """
     if i is None:
         return None
