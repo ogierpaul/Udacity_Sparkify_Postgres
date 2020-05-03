@@ -3,6 +3,7 @@ import os
 import bleach
 import pandas as pd
 import psycopg2
+import sys
 
 
 def connection_sparkifydb():
@@ -111,3 +112,29 @@ def get_all_files(filepath):
         for f in files:
             all_files.append(os.path.abspath(f))
     return all_files
+
+def bulk_copy(df, cur,  tablename, filename=None):
+    """
+    Bulk import into PostgreSql
+    - Write the data as a csv file into the csvpath directory. (index=False) The filename is a timestamp of the time when the function is called.
+    - execute the query
+    Args:
+        df (pd.DataFrame): Data to import. All the columns must be in the same order. Index will not be copied.
+        cur (psycopg2.cursor): cursor object
+        tablename (str): table name to import
+        filename (str): name of the file. If none, will use timestamp of the time when the function is called
+
+    Returns:
+        None
+    """
+    if filename is None:
+        filename = pd.datetime.now().strftime("%d-%b-%Y (%H:%M:%S.%f)") + '.csv'
+    csvdir = sys.path[0] + '/data/csv_sync' #csvdir (str): path of directory for csv import
+
+    df.to_csv(path_or_buf=csvdir + '/' + filename, encoding='utf-8', sep='|', index=False)
+    query = """
+    COPY {} FROM STDIN WITH CSV HEADER ENCODING 'UTF-8' DELIMITER '|'
+    """.format(tablename)
+    with open(csvdir + '/' + filename, 'r') as f:
+        cur.copy_expert(query, f)
+    return None

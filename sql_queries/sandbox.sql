@@ -1,3 +1,1 @@
-SELECT * FROM artists;
-
-SELECT * FROM songplays;
+SELECT * FROM test_foo;
