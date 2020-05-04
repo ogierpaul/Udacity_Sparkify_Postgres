@@ -51,7 +51,9 @@ def test_bulk_copy():
     bar VARCHAR(10),
     PRIMARY KEY (id))
     """)
+
     bulk_copy(df=df, tablename='test_foo', cur=cur, filename='test.csv')
+
     df2 = pd.read_sql('SELECT * FROM test_foo', con=conn)
     assert df2.shape[0] == 2
     cur.execute('DROP TABLE test_foo')

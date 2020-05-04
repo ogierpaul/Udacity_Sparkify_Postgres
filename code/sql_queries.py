@@ -40,7 +40,7 @@ CREATE TABLE users (
 song_table_create = ("""
 CREATE TABLE songs (
     song_id VARCHAR(64),
-    title VARCHAR(64),
+    title VARCHAR(256),
     artist_id VARCHAR(64),
     year INTEGER,
     duration DOUBLE PRECISION,
@@ -114,13 +114,13 @@ ON CONFLICT (start_time)
 # FIND SONGS
 
 song_select = ("""
-SELECT a1.song_id,a2.artist_id 
-                    FROM songs a1 
-                    JOIN artists a2 USING (artist_id) 
+SELECT songs.song_id, artists.artist_id 
+                    FROM songs 
+                    JOIN artists USING (artist_id) 
                     WHERE 
-                    a1.title=(%s) AND 
-                    a2.name=(%s) AND 
-                    a1.duration=(%s);
+                    songs.title=(%s) AND
+                    songs.duration=(%s) AND
+                    artists.name=(%s);
 """)
 
 # QUERY LISTS
