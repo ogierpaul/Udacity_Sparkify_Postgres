@@ -1,7 +1,8 @@
 import pandas as pd
 import psycopg2
+import pytest
 
-from code.utils import connection_sparkifydb, sanitize_inputs, primary_key_check, bulk_copy
+from sparkify_pg_code.utils import connection_sparkifydb, sanitize_inputs, primary_key_check, bulk_copy
 
 
 def test_conn():
@@ -35,6 +36,7 @@ def test_bulk_copy():
             [2, 'foo2', None]
             ]
     df = pd.DataFrame(data=data, columns=['id', 'foo', 'bar'])
+    df['id'] = df['id'].astype(int)
 
     conn = connection_sparkifydb()
     cur = conn.cursor()
@@ -51,11 +53,21 @@ def test_bulk_copy():
     bar VARCHAR(10),
     PRIMARY KEY (id))
     """)
-
-    bulk_copy(df=df, tablename='test_foo', cur=cur, filename='test.csv')
-
+    #UPLOAD once
+    bulk_copy(df=df, tablename='test_foo', cur=cur, pkey='id')
     df2 = pd.read_sql('SELECT * FROM test_foo', con=conn)
     assert df2.shape[0] == 2
-    cur.execute('DROP TABLE test_foo')
 
+    #UPLOAD with UPSERT
+    df_more = df.copy()
+    row_more = pd.DataFrame(pd.Series(data=[3, 'mars', 'bon'], index=['id', 'foo', 'bar'])).transpose()
+    assert row_more.shape[0] == 1
+    df_more = pd.concat([df_more, row_more], axis=0)
+    assert df_more.shape[0] == 3
+    bulk_copy(df=df_more, tablename='test_foo', cur=cur, pkey='id')
+    df2 = pd.read_sql('SELECT * FROM test_foo', con=conn)
+    assert df2.shape[0] == 3
+    #THE shape of df2 should be 3 because the first two rows are already existing
+
+    cur.execute('DROP TABLE test_foo')
     conn.close()

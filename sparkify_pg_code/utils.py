@@ -118,32 +118,37 @@ def prepare_data(df, usecols=None, pkey=None):
     df2 = df2.applymap(lambda v: sanitize_inputs(v))  # sanitize clean inputs with bleach
     return df2
 
-def bulk_copy(df, cur, tablename, pkey, filename=None, upsert=False):
+def bulk_copy(df, cur, tablename, pkey=None, filename=None, upsert=False):
     """
     Bulk import into PostgreSql
     - Write the data as a csv file into the csvpath directory. (without the index)\
-    - execute  a COPY FROM query
-    - delete the file
-    Careful, COPY FROM will not be able to do UPSERT
+    If no primary key is provided:
+        - execute  a COPY FROM query
+        - delete the file
+    Else:
+        - Create a temporary empty temp_tablename with same structure as tablename
+        - COPY FROM the input data to a temp_tablename
+        - INSERT / ON CONFLICT DO NOTHING between temp_tablename and tablename
+        - DROP temp_tablename
     Args:
         df (pd.DataFrame): Data to import. All the columns must be in the same order. Index will not be copied.
         cur (psycopg2.cursor): cursor object
         tablename (str): table name to import
         filename (str): name of the file. If none, will use timestamp of the time when the function is called
-        upsert (bool): If yes, will allow upsert
-        pkey(str/list): primary key or list
+        pkey(str/list): primary key or list. If provided, will allow upsert.
 
     Returns:
         None
     """
-    #TODO: Allow upsert / Test upsert and clean up code
     if filename is None:
         filename = tablename + '_' + pd.datetime.now().strftime("%Y-%b-%d-%H-%M-%S") + '.csv'
-    csvdir = os.path.dirname(sys.path[0]) + '/data/csv_sync'  # csvdir (str): path of directory for csv import
+    # csvdir = os.path.dirname(sys.path[0]) + '/data/csv_sync'  # csvdir (str): path of directory for csv import
+    csvdir = os.path.abspath('../data/csv_sync')
     filepath = csvdir + '/' + filename
     df.to_csv(path_or_buf=filepath, encoding='utf-8', sep='|', index=False)
     # Preventing SQL injections thanks to https://github.com/psycopg/psycopg2/issues/529
-    if upsert is False or pkey is None:
+
+    if pkey is None:
         query = sql.SQL("""
             COPY {tablename} FROM STDIN WITH CSV HEADER ENCODING 'UTF-8' DELIMITER '|'
             """).format(tablename=sql.Identifier(tablename))
@@ -162,6 +167,7 @@ def bulk_copy(df, cur, tablename, pkey, filename=None, upsert=False):
         cur.execute(query_create)
         query_delete = sql.SQL("""DELETE FROM {temp_tablename};""").format(temp_tablename=sql.Identifier(temp_tablename))
         cur.execute(query_delete)
+
         query_copy = sql.SQL("""
         COPY {temp_tablename} FROM STDIN WITH 
         DELIMITER AS '|' ENCODING 'UTF-8' CSV HEADER;
@@ -169,7 +175,6 @@ def bulk_copy(df, cur, tablename, pkey, filename=None, upsert=False):
         with open(filepath, 'r') as f:
             cur.copy_expert(query_copy, f)
 
-        # cur.execute(query_copy, {'filepath': filepath, 'temp_tablename': 'temp_' + tablename, 'tablename': tablename})
         query_upsert = sql.SQL("""
         INSERT INTO {tablename}
             (
@@ -184,6 +189,7 @@ def bulk_copy(df, cur, tablename, pkey, filename=None, upsert=False):
                     pkey_s=sql.Identifier(_format_pkey(pkey=pkey)))
         # cur.execute(query_upsert, {'temp_tablename': 'temp_' + tablename, 'tablename': tablename, 'primary_key': _format_pkey(pkey)})
         cur.execute(query_upsert)
+
         query_drop = sql.SQL("""DROP TABLE {temp_tablename};""").format(temp_tablename=sql.Identifier(temp_tablename))
         cur.execute(query_drop)
     os.remove(filepath)

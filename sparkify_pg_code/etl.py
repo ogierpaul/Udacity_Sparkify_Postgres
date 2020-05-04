@@ -1,6 +1,6 @@
-from code.sql_queries import *
+from sparkify_pg_code.sql_queries import *
 import pandas as pd
-from code.utils import prepare_data, connection_sparkifydb, get_all_files, sanitize_inputs, bulk_copy
+from sparkify_pg_code.utils import prepare_data, connection_sparkifydb, get_all_files, sanitize_inputs, bulk_copy
 import psycopg2
 
 def process_song_file(cur, filepath, bulk=False):

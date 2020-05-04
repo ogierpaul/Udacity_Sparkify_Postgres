@@ -3,7 +3,7 @@ import os
 import glob
 import psycopg2
 import bleach
-from code.utils import connection_sparkifydb, bulk_copy
+from sparkify_pg_code.utils import connection_sparkifydb, bulk_copy
 
 #TODO:
 # - Insert data using the COPY command to bulk insert log files instead of using INSERT on one row at a time
