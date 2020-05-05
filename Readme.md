@@ -4,7 +4,7 @@
 
 ## Repository structure
 * data: sample datasets
-* code: python routines for creating the Sparkify database and Postgres
+* sparkify_pg_code: python routines for creating the Sparkify database and Postgres
 * sql_queries: sample sql_queries
 * tests: basic test cases
 
@@ -47,5 +47,5 @@ See the function utils.bulk_copy for implementation details of the bulk update.
 
 
 #### Analytics query
-* Using the star schema, we provide a query to find the top 10 most played songs in 2019
+* Using the star schema, we provide a query to find the top 10 most played songs in 2019 in the sample sql_queries provided
 
