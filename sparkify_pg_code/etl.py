@@ -263,7 +263,7 @@ def process_songplays_data(df, cur, bulk=False):
         for index, row in df.iterrows():
 
             # get songid and artistid from song and artist tables
-            cur.execute(song_select, (row.song, row.artist, row.length))
+            cur.execute(song_select, (row.song,  row.length, row.artist))
             results = cur.fetchone()
 
             if results:
@@ -340,11 +340,12 @@ def main():
     Returns:
         None
     """
+    bulk = True
     conn = connection_sparkifydb()
     cur = conn.cursor()
 
-    process_data(cur, conn, filepath='../data/song_data', func=process_song_file, bulk=True)
-    process_data(cur, conn, filepath='../data/log_data', func=process_log_file, bulk=True)
+    process_data(cur, conn, filepath='../data/song_data', func=process_song_file, bulk=bulk)
+    process_data(cur, conn, filepath='../data/log_data', func=process_log_file, bulk=bulk)
 
     conn.close()
     return None
