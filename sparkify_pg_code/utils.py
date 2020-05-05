@@ -10,7 +10,7 @@ import datetime
 
 def connection_sparkifydb():
     """
-
+    Connect to the Sparkifydb using username and password provided by Udacity
     Returns:
         psycopg2.connection
     """
@@ -21,7 +21,7 @@ def connection_sparkifydb():
 
 def get_all_files(filepath):
     """
-
+    List all of the json files inside of the directory
     Args:
         filepath: path to explore
 
@@ -199,7 +199,7 @@ def bulk_copy(df, cur, tablename, pkey=None, filename=None, upsert=False):
 
 def _format_pkey(pkey):
     """
-    to insert in the sql query
+    Format the primary key to be inserted into an SQL query
     Args:
         pkey (str/list):
 
