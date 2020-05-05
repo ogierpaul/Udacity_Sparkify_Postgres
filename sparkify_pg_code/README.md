@@ -16,3 +16,4 @@
 ## Added as a bonus to the project
 - Sanitize inputs (see utils.prepare_data)
 - Bulk loading (as an option in the process fonctions)
+- Analytic query is stored inside of sql_queries/song_select.sql
