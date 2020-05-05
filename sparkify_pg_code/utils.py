@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2 import sql
 import sys
 import pathlib
-
+import datetime
 
 def connection_sparkifydb():
     """
@@ -141,7 +141,7 @@ def bulk_copy(df, cur, tablename, pkey=None, filename=None, upsert=False):
         None
     """
     if filename is None:
-        filename = tablename + '_' + pd.datetime.now().strftime("%Y-%b-%d-%H-%M-%S") + '.csv'
+        filename = tablename + '_' + datetime.datetime.now().strftime("%Y-%b-%d-%H-%M-%S") + '.csv'
     # csvdir = os.path.dirname(sys.path[0]) + '/data/csv_sync'  # csvdir (str): path of directory for csv import
     csvdir = os.path.abspath('../data/csv_sync')
     filepath = csvdir + '/' + filename
@@ -174,7 +174,10 @@ def bulk_copy(df, cur, tablename, pkey=None, filename=None, upsert=False):
         """).format(temp_tablename = sql.Identifier('temp_' + tablename))
         with open(filepath, 'r') as f:
             cur.copy_expert(query_copy, f)
-
+        if isinstance(pkey, str):
+            pkey_s = sql.Identifier(pkey)
+        else:
+            pkey_s = sql.SQL(', ').join([sql.Identifier(c) for c in pkey])
         query_upsert = sql.SQL("""
         INSERT INTO {tablename}
             (
@@ -186,10 +189,9 @@ def bulk_copy(df, cur, tablename, pkey=None, filename=None, upsert=False):
         DO NOTHING;
         """).format(tablename=sql.Identifier(tablename),
                     temp_tablename=sql.Identifier(temp_tablename),
-                    pkey_s=sql.Identifier(_format_pkey(pkey=pkey)))
+                    pkey_s=pkey_s)
         # cur.execute(query_upsert, {'temp_tablename': 'temp_' + tablename, 'tablename': tablename, 'primary_key': _format_pkey(pkey)})
         cur.execute(query_upsert)
-
         query_drop = sql.SQL("""DROP TABLE {temp_tablename};""").format(temp_tablename=sql.Identifier(temp_tablename))
         cur.execute(query_drop)
     os.remove(filepath)

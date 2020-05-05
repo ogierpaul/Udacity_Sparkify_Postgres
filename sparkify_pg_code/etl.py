@@ -44,15 +44,15 @@ def process_song_file(cur, filepath, bulk=False):
     return None
 
 
-def bulk_select_song_info(data, cur):
+def bulk_select_song_info(song_info, cur):
     """
     From the songs.title, songs.duration, artists.name information, return the song_id and artist_id information
     Args:
-        data (pd.DataFrame): contains the columns ['title', 'duration', 'name']
-        cur (psycopg2.cursor): cursor object
+        song_info (pd.DataFrame): contains the columns ['title', 'duration', 'name']
+        cur (psycopg2.cursor): connection object
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame: with columns
     """
     # CREATE temp TABLE
     try:
@@ -65,11 +65,23 @@ def bulk_select_song_info(data, cur):
         # REMOVE rows from temp table
         cur.execute("DELETE FROM temp_song_select;")
         # COPY rows from data into the temp table
-        bulk_copy(df=data, cur=cur, tablename='temp_song_select', pkey=None)
-        # SELECT AND JOIN
-        pass
+        bulk_copy(df=song_info, cur=cur, tablename='temp_song_select', pkey=None)
+        # SELECT
+        query_join = """
+        SELECT song_id, artist_id FROM
+        temp_song_select AS t
+        LEFT JOIN (SELECT song_id, title, artist_id, duration FROM songs) s
+        USING (title, duration)
+        LEFT JOIN (SELECT artist_id, name FROM artists) a
+        USING( artist_id, name);
+        """
+        cur.execute(query_join)
+        r = cur.fetchall()
+        df = pd.DataFrame(data=r, columns=['song_id', 'artist_id'], index=song_info.index)
+        return df
     except psycopg2.Error as e:
         print(e)
+        return None
 
 
 
@@ -127,7 +139,7 @@ def process_log_file(cur, filepath, bulk=False):
         data=['user_id', 'first_name', 'last_name', 'gender', 'level'])
     user_df = prepare_data(df=user_df, usecols=user_cols, pkey=['user_id'])
     if bulk:
-        bulk_copy(df=user_df, tablename='users', cur=cur, pkey='user_id', upsert=True)
+        bulk_copy(df=user_df, tablename='users', cur=cur, pkey='user_id')
     else:
         for (i, r) in user_df.iterrows():
             cur.execute(user_table_insert, r)
@@ -136,13 +148,14 @@ def process_log_file(cur, filepath, bulk=False):
     if bulk:
         songplay_df = df[['ts', 'userId', 'level', 'sessionId', 'location', 'userAgent', 'song', 'artist', 'length']].copy()
         songplay_df['start_time'] = pd.to_datetime(songplay_df['ts'], unit='ms')
-        bulk_select_song_info(data=songplay_df[['song', 'length', 'artist']], cur=cur)
-        #TODO: Do join on the song, artistst, length
-        if False:
-            usecols = pd.Series(index=['start_time', 'userId', 'level', 'song_id', 'artist_id','sessionId', 'location', 'userAgent'],
-                                data=['start_time', 'user_id', 'level', 'song_id', 'artist_id','session_id', 'location', 'user_agent'])
-            songplay_df = prepare_data(df=songplay_df, usecols=usecols, pkey=['start_time', 'user_id'])
-            bulk_copy(df=songplay_df, cur=cur, tablename='songplays')
+        add_info = bulk_select_song_info(song_info=songplay_df[['song', 'length', 'artist']], cur=cur)
+        songplay_df['song_id'] = add_info['song_id']
+        songplay_df['artist_id'] = add_info['artist_id']
+        usecols = pd.Series(
+            index=['start_time', 'userId','level', 'song_id', 'artist_id', 'sessionId', 'location', 'userAgent'],
+            data=['start_time', 'user_id','level', 'song_id', 'artist_id', 'session_id', 'location', 'userAgent'])
+        songplay_df = prepare_data(df=songplay_df, usecols=usecols, pkey=['start_time', 'user_id'])
+        bulk_copy(df=songplay_df, cur=cur, tablename='songplays', pkey=['start_time', 'user_id'])
     else:
         # insert songplay records
         for index, row in df.iterrows():
