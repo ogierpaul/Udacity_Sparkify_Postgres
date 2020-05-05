@@ -1,5 +1,5 @@
 import psycopg2
-from code.sql_queries import create_table_queries, drop_table_queries
+from sparkify_pg_code.sql_queries import create_table_queries, drop_table_queries
 
 drop_create_database = False
 
@@ -18,7 +18,7 @@ def create_database(drop_create_database=False):
     conn.set_session(autocommit=True)
     cur = conn.cursor()
     
-    # create code database with UTF8 encoding
+    # create sparkify_pg_code database with UTF8 encoding
     if drop_create_database:
         cur.execute("DROP DATABASE IF EXISTS sparkifydb")
         cur.execute("CREATE DATABASE sparkifydb WITH ENCODING 'utf8' TEMPLATE template0")
@@ -28,7 +28,7 @@ def create_database(drop_create_database=False):
     # close connection to default database
     conn.close()    
     
-    # connect to code database
+    # connect to sparkify_pg_code database
     conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
     cur = conn.cursor()
     
@@ -55,9 +55,9 @@ def create_tables(cur, conn):
 
 def main():
     """
-    - Drops (if exists) and Creates the code database.
+    - Drops (if exists) and Creates the sparkify_pg_code database.
     
-    - Establishes connection with the code database and gets
+    - Establishes connection with the sparkify_pg_code database and gets
     cursor to it.  
     
     - Drops all the tables.  
