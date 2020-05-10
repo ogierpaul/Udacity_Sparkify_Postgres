@@ -41,7 +41,7 @@ For each of the method to update a table, two options are available:
 * Bulk = False. Will do a standard UPSERT (INSERT... ON CONFLICT (primary key) DO NOTHING..)
 * Bulk = True. Will do a COPY FROM. \
  If we need to do an UPSERT using COPY FROM (possible redundancy with the primary key), \
- We COPY the data to a temporary table and then do an INSERT .. ON CONFLICT from this temporary table to the finale table
+ We COPY the data to a temporary table and then do an INSERT .. ON CONFLICT from this temporary table to the target table
 
 See the function utils.bulk_copy for implementation details of the bulk update.
 
